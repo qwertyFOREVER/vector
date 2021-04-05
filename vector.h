@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <memory>
 
 template<typename T, typename Alloc = std::allocator<T>>
 class Vector {
@@ -7,6 +8,14 @@ class Vector {
   T *arr;
   size_t size_;
   size_t real_size;
+
+  void allocate() {
+    auto *m = new T[2 * real_size];
+    for (size_t i = 0; i < size_; i++)
+      m[i] = arr[i];
+    delete[] arr;
+    arr = m;
+  }
 
  public:
   Vector() {
@@ -18,7 +27,7 @@ class Vector {
   Vector(size_t size) {
     real_size = size;
     size_ = size;
-    arr = new T[real_size];
+    arr = new T[real_size]; // TODO
   }
 
   Vector(size_t size, T && elem) {
@@ -30,7 +39,7 @@ class Vector {
     }
   }
 
-  Vector(size_t size, T &elem) {
+  Vector(size_t size, T & elem) {
     real_size = size;
     size_ = size;
     arr = new T[real_size];
@@ -47,7 +56,7 @@ class Vector {
     return arr;
   }
 
-  Vector(Vector &other) {
+  Vector(const Vector &other) {
     size_ = other.size();
     real_size = other.real_size;
 
@@ -56,7 +65,7 @@ class Vector {
       arr[i] = other.arr[i];
   }
 
-  Vector(Vector &&other) {
+  Vector(Vector && other) {
     size_ = std::move(other.size_);
     real_size = std::move(other.real_size);
     for (int i = 0; i < real_size; i++) {
@@ -95,8 +104,20 @@ class Vector {
     return arr[n];
   }
 
+  T &operator[](size_t &n) const {
+    if (n >= size_)
+      throw std::out_of_range("Element is out of range");
+    return arr[n];
+  }
+
+  T &operator[](size_t &&n) const {
+    if (n >= size_)
+      throw std::out_of_range("Element is out of range");
+    return arr[n];
+  }
+
   bool operator>(const Vector other) {
-    if (size_ != other.size()) return -1;
+    if (size_ != other.size()) return false;
 
     for (int i = 0; i < other.size_; i++)
       if (arr[i] <= other[i]) return false;
@@ -105,7 +126,7 @@ class Vector {
   }
 
   bool operator<(const Vector other) {
-    if (size_ != other.size()) return -1;
+    if (size_ != other.size()) return false;
 
     for (int i = 0; i < other.size_; i++)
       if (arr[i] >= other[i]) return false;
@@ -126,15 +147,7 @@ class Vector {
     return !(other == *this);
   }
 
-  void allocate() {
-    auto *m = new T[2 * real_size];
-    for (size_t i = 0; i < size_; i++)
-      m[i] = arr[i];
-    delete[] arr;
-    arr = m;
-  }
-
-  void insert(T &&elem) {
+  void push_back(T &&elem) {
     if (real_size <= size_) {
       allocate();
     }
@@ -142,7 +155,7 @@ class Vector {
     size_ += 1;
   }
 
-  void insert(T &elem) {
+  void push_back(T &elem) {
     if (real_size <= size_) {
       allocate();
     }
@@ -152,7 +165,7 @@ class Vector {
 
   template<typename... _Args>
   void emplace_back(_Args &&... args) {
-    return insert(T(args...));
+    return push_back(T(args...));
   }
 
   size_t size() const {
